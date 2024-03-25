@@ -8,13 +8,33 @@ import (
 
 const LOOPS_AFTER_BREAK = 3
 
+func usage_error() {
+  fmt.Printf("Usage: %s <work-time(m)> <break-time(m)> <optional confirm-flag 1/0>\n", os.Args[0])
+  os.Exit(0)
+}
+
+func confirmPrompt() {
+  fmt.Println("Confirming next stage, press Enter to continue...")
+  fmt.Scanln()
+}
+
 func main() {
 	var argc int = len(os.Args)
+  var confirmFlag bool = false
 
-	if argc != 3 {
-		fmt.Printf("Usage: %s <work-time(m)> <break-time(m)>\n", os.Args[0])
-		os.Exit(0)
-	}
+  if argc == 4 {
+    if os.Args[3] == "1" {
+      confirmFlag = true
+      fmt.Println("Asking to confirm.")
+    } else if os.Args[3] == "0" {
+      confirmFlag = false
+      fmt.Println("Confirmation disabled.")
+    } else {
+      usage_error()
+    }
+  } else if argc < 3 || argc > 4 {
+    usage_error()
+  }
 
 	// Parse arguments
 	workStr := os.Args[1]
@@ -35,7 +55,11 @@ func main() {
 	var longBreakTimer int = 0
 
 	for {
-		if !isBreak {
+		if !isBreak { // Work section
+      if confirmFlag == true {
+        confirmPrompt()
+      }
+
 			fmt.Println("Starting Work.")
 			ticker := time.NewTicker(1 * time.Second)
 			startTime := time.Now()
@@ -55,8 +79,12 @@ func main() {
 			time.Sleep(workTime)
 			fmt.Println("Work is Over.")
 			isBreak = true
-		} else if isBreak && longBreakTimer != LOOPS_AFTER_BREAK {
-			fmt.Println("Starting Break.")
+		} else if isBreak && longBreakTimer != LOOPS_AFTER_BREAK { // Break section
+			if confirmFlag == true {
+        confirmPrompt()
+      }
+
+      fmt.Println("Starting Break.")
 			ticker := time.NewTicker(1 * time.Second)
 			startTime := time.Now()
 
@@ -76,8 +104,12 @@ func main() {
 			fmt.Println("Break is Over.")
 			isBreak = false
 			longBreakTimer++
-		} else if isBreak && longBreakTimer == LOOPS_AFTER_BREAK {
-			fmt.Println("Starting Long Break.")
+		} else if isBreak && longBreakTimer == LOOPS_AFTER_BREAK { // Long break section
+			if confirmFlag == true {
+        confirmPrompt()
+      }
+
+      fmt.Println("Starting Long Break.")
 			ticker := time.NewTicker(1 * time.Second)
 			startTime := time.Now()
 

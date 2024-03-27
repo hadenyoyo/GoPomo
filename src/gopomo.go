@@ -77,7 +77,7 @@ func main() {
 			}()
 
 			time.Sleep(workTime)
-			fmt.Println("Work is Over.")
+			fmt.Println("Work is Over.\a")
 			isBreak = true
 		} else if isBreak && longBreakTimer != LOOPS_AFTER_BREAK { // Break section
 			if confirmFlag == true {
@@ -101,7 +101,7 @@ func main() {
 			}()
 
 			time.Sleep(breakTime)
-			fmt.Println("Break is Over.")
+			fmt.Println("Break is Over.\a")
 			isBreak = false
 			longBreakTimer++
 		} else if isBreak && longBreakTimer == LOOPS_AFTER_BREAK { // Long break section
@@ -127,7 +127,7 @@ func main() {
 
 			time.Sleep(breakTime * 2)
 			ticker.Stop()
-			fmt.Println("Long Break is Over.")
+			fmt.Println("Long Break is Over.\a")
 			isBreak = false
 			longBreakTimer = 0
 		}

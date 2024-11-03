@@ -49,8 +49,8 @@ func parseFlags() (config, error) {
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExample Usage:\n")
-		fmt.Fprintf(os.Stderr, "%s -word 25 -break 5 -confirm\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "%s -w 45 -b 7 -c\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s -word 25 -break 5 -loops 6 -confirm\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s -w 45 -b 7.5 -lb 22 -l 5 -c\n", os.Args[0])
 	}
 
 	flag.Parse()

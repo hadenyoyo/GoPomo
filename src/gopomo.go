@@ -1,136 +1,120 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
 )
 
-const LOOPS_AFTER_BREAK = 3
-
-func usage_error() {
-  fmt.Printf("Usage: %s <work-time(m)> <break-time(m)> <optional confirm-flag 1/0>\n", os.Args[0])
-  os.Exit(0)
-}
-
-func confirmPrompt() {
-  fmt.Println("Confirming next stage, press Enter to continue...")
-  fmt.Scanln()
+type config struct {
+	workTime      time.Duration
+	breakTime     time.Duration
+	longBreakTime time.Duration
+	breakLoops    int
+	confirmBreak  bool
 }
 
 func main() {
-	var argc int = len(os.Args)
-  var confirmFlag bool = false
-
-  if argc == 4 {
-    if os.Args[3] == "1" {
-      confirmFlag = true
-      fmt.Println("Asking to confirm.")
-    } else if os.Args[3] == "0" {
-      confirmFlag = false
-      fmt.Println("Confirmation disabled.")
-    } else {
-      usage_error()
-    }
-  } else if argc < 3 || argc > 4 {
-    usage_error()
-  }
-
-	// Parse arguments
-	workStr := os.Args[1]
-	workTime, err := time.ParseDuration(workStr)
+	cfg, err := parseFlags()
 	if err != nil {
-		fmt.Printf("Invalid work time format: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	breakStr := os.Args[2]
-	breakTime, err := time.ParseDuration(breakStr)
-	if err != nil {
-		fmt.Printf("Invalid break time format: %v\n", err)
-		os.Exit(1)
+	fmt.Printf("Starting GoPomo with work time: %v, short break time %v, and long break time %v\n", cfg.workTime, cfg.breakTime, cfg.longBreakTime)
+
+	runPomodoro(cfg)
+}
+
+func parseFlags() (config, error) {
+	var cfg config
+	var workMinutes, breakMinutes, longBreakMinutes int
+
+	flag.IntVar(&workMinutes, "work", 25, "Work time in minutes")
+	flag.IntVar(&workMinutes, "w", 25, "Work time in minutes, shorthand")
+	flag.IntVar(&breakMinutes, "break", 5, "Break time in minutes")
+	flag.IntVar(&breakMinutes, "b", 5, "Break time in minutes, shorthand")
+	flag.IntVar(&longBreakMinutes, "longbreak", 0, "Long break time in minutes")
+	flag.IntVar(&longBreakMinutes, "lb", 0, "Long break time in minutes, shorthand")
+	flag.IntVar(&cfg.breakLoops, "loops", 3, "Loops of work/break before long break")
+	flag.IntVar(&cfg.breakLoops, "l", 3, "Loops of work/break before long break, shorthand")
+	flag.BoolVar(&cfg.confirmBreak, "confirm", false, "Confirm before starting next phase")
+	flag.BoolVar(&cfg.confirmBreak, "c", false, "Confirm before starting next phase, shorthand")
+
+	// Custom usage message
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage for %s:\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "A simple Pomodoro app.\n\n")
+		fmt.Fprintf(os.Stderr, "Flags:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nExample Usage:\n")
+		fmt.Fprintf(os.Stderr, "%s -word 25 -break 5 -confirm\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s -w 45 -b 7 -c\n", os.Args[0])
 	}
 
-	var isBreak bool = false
-	var longBreakTimer int = 0
+	flag.Parse()
+
+	// Convert to time format
+	cfg.workTime = time.Duration(workMinutes) * time.Minute
+	cfg.breakTime = time.Duration(breakMinutes) * time.Minute
+
+	// longBreakTime default value
+	cfg.longBreakTime = cfg.breakTime * 2
+
+	// Update longBreakTime if explicitly set
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "longbreak" || f.Name == "lb" {
+			cfg.longBreakTime = time.Duration(longBreakMinutes) * time.Minute
+		}
+	})
+
+	return cfg, nil
+}
+
+func runPomodoro(cfg config) {
+	isBreak := false
+	longBreakCounter := 0
 
 	for {
-		if !isBreak { // Work section
-      if confirmFlag == true {
-        confirmPrompt()
-      }
+		var duration time.Duration
+		var phase string
 
-			fmt.Println("Starting Work.")
-			ticker := time.NewTicker(1 * time.Second)
-			startTime := time.Now()
-
-			go func() {
-				for range ticker.C {
-					elapsed := time.Since(startTime)
-					remaining := workTime - elapsed
-					if remaining <= 0 {
-						ticker.Stop()
-						return
-					}
-					fmt.Printf("Remaining work time: %v\n", remaining.Round(time.Second))
-				}
-			}()
-
-			time.Sleep(workTime)
-			fmt.Println("Work is Over.\a")
-			isBreak = true
-		} else if isBreak && longBreakTimer != LOOPS_AFTER_BREAK { // Break section
-			if confirmFlag == true {
-        confirmPrompt()
-      }
-
-      fmt.Println("Starting Break.")
-			ticker := time.NewTicker(1 * time.Second)
-			startTime := time.Now()
-
-			go func() {
-				for range ticker.C {
-					elapsed := time.Since(startTime)
-					remaining := breakTime - elapsed
-					if remaining <= 0 {
-						ticker.Stop()
-						return
-					}
-					fmt.Printf("Remaining break time: %v\n", remaining.Round(time.Second))
-				}
-			}()
-
-			time.Sleep(breakTime)
-			fmt.Println("Break is Over.\a")
-			isBreak = false
-			longBreakTimer++
-		} else if isBreak && longBreakTimer == LOOPS_AFTER_BREAK { // Long break section
-			if confirmFlag == true {
-        confirmPrompt()
-      }
-
-      fmt.Println("Starting Long Break.")
-			ticker := time.NewTicker(1 * time.Second)
-			startTime := time.Now()
-
-			go func() {
-				for range ticker.C {
-					elapsed := time.Since(startTime)
-					remaining := (breakTime * 2) - elapsed
-					if remaining <= 0 {
-						ticker.Stop()
-						return
-					}
-					fmt.Printf("Remaining long break time: %v\n", remaining.Round(time.Second))
-				}
-			}()
-
-			time.Sleep(breakTime * 2)
-			ticker.Stop()
-			fmt.Println("Long Break is Over.\a")
-			isBreak = false
-			longBreakTimer = 0
+		if !isBreak {
+			duration = cfg.workTime
+			phase = "Work"
+		} else if longBreakCounter < cfg.breakLoops {
+			duration = cfg.breakTime
+			phase = "Break"
+		} else {
+			duration = cfg.longBreakTime
+			phase = "Long Break"
+			longBreakCounter = 0
 		}
 
+		if cfg.confirmBreak {
+			fmt.Println("Confirming next stage, press Enter to continue...")
+			fmt.Scanln()
+		}
+
+		fmt.Printf("Starting %s phase.\n", phase)
+		countdown(duration)
+		fmt.Printf("%s complete.\n", phase)
+
+		if isBreak {
+			longBreakCounter++
+		}
+		isBreak = !isBreak
+	}
+}
+
+func countdown(duration time.Duration) {
+	start := time.Now()
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for remaining := duration; remaining > 0; remaining = duration - time.Since(start) {
+		fmt.Printf("Time remaining: %v\n", remaining.Round(time.Second))
+		<-ticker.C
 	}
 }

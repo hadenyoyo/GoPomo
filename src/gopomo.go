@@ -29,14 +29,14 @@ func main() {
 
 func parseFlags() (config, error) {
 	var cfg config
-	var workMinutes, breakMinutes, longBreakMinutes int
+	var workMinutes, breakMinutes, longBreakMinutes float64
 
-	flag.IntVar(&workMinutes, "work", 25, "Work time in minutes")
-	flag.IntVar(&workMinutes, "w", 25, "Work time in minutes, shorthand")
-	flag.IntVar(&breakMinutes, "break", 5, "Break time in minutes")
-	flag.IntVar(&breakMinutes, "b", 5, "Break time in minutes, shorthand")
-	flag.IntVar(&longBreakMinutes, "longbreak", 0, "Long break time in minutes")
-	flag.IntVar(&longBreakMinutes, "lb", 0, "Long break time in minutes, shorthand")
+	flag.Float64Var(&workMinutes, "work", 25, "Work time in minutes")
+	flag.Float64Var(&workMinutes, "w", 25, "Work time in minutes, shorthand")
+	flag.Float64Var(&breakMinutes, "break", 5, "Break time in minutes")
+	flag.Float64Var(&breakMinutes, "b", 5, "Break time in minutes, shorthand")
+	flag.Float64Var(&longBreakMinutes, "longbreak", 0, "Long break time in minutes")
+	flag.Float64Var(&longBreakMinutes, "lb", 0, "Long break time in minutes, shorthand")
 	flag.IntVar(&cfg.breakLoops, "loops", 3, "Loops of work/break before long break")
 	flag.IntVar(&cfg.breakLoops, "l", 3, "Loops of work/break before long break, shorthand")
 	flag.BoolVar(&cfg.confirmBreak, "confirm", false, "Confirm before starting next phase")
@@ -56,8 +56,8 @@ func parseFlags() (config, error) {
 	flag.Parse()
 
 	// Convert to time format
-	cfg.workTime = time.Duration(workMinutes) * time.Minute
-	cfg.breakTime = time.Duration(breakMinutes) * time.Minute
+	cfg.workTime = time.Duration((workMinutes) * float64(time.Minute))
+	cfg.breakTime = time.Duration((breakMinutes) * float64(time.Minute))
 
 	// longBreakTime default value
 	cfg.longBreakTime = cfg.breakTime * 2

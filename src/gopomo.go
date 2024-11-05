@@ -38,8 +38,8 @@ func parseFlags() (config, error) {
 	flag.Float64Var(&breakMinutes, "b", 5, "Break time in minutes, shorthand")
 	flag.Float64Var(&longBreakMinutes, "longbreak", 0, "Long break time in minutes")
 	flag.Float64Var(&longBreakMinutes, "lb", 0, "Long break time in minutes, shorthand")
-	flag.IntVar(&cfg.breakLoops, "loops", 3, "Loops of work/break before long break")
-	flag.IntVar(&cfg.breakLoops, "l", 3, "Loops of work/break before long break, shorthand")
+	flag.IntVar(&cfg.breakLoops, "loops", 3, "Defined as number of work sessions before long break")
+	flag.IntVar(&cfg.breakLoops, "l", 3, "Loops of work before long break, shorthand")
 	flag.BoolVar(&cfg.confirmBreak, "confirm", false, "Confirm before starting next phase")
 	flag.BoolVar(&cfg.confirmBreak, "c", false, "Confirm before starting next phase, shorthand")
 
@@ -66,7 +66,7 @@ func parseFlags() (config, error) {
 	// Update longBreakTime if explicitly set
 	flag.Visit(func(f *flag.Flag) {
 		if f.Name == "longbreak" || f.Name == "lb" {
-			cfg.longBreakTime = time.Duration(longBreakMinutes) * time.Minute
+			cfg.longBreakTime = time.Duration((longBreakMinutes) * float64(time.Minute))
 		}
 	})
 
@@ -87,6 +87,7 @@ func runPomodoro(cfg config) {
 		if !isBreak {
 			duration = cfg.workTime
 			phase = "Work"
+			longBreakCounter++
 		} else if longBreakCounter < cfg.breakLoops {
 			duration = cfg.breakTime
 			phase = "Break"
@@ -101,13 +102,10 @@ func runPomodoro(cfg config) {
 			<-pauseChan
 		}
 
-		fmt.Printf("Starting %s phase.\n", phase)
+		fmt.Printf("\nStarting %s phase.\n", phase)
 		countdown(duration, pauseChan)
 		fmt.Printf("%s complete.\a\n", phase)
 
-		if isBreak {
-			longBreakCounter++
-		}
 		isBreak = !isBreak
 	}
 }

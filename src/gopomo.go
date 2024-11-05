@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/gen2brain/beeep"
 )
 
 type config struct {
@@ -14,6 +16,7 @@ type config struct {
 	longBreakTime time.Duration
 	breakLoops    int
 	confirmBreak  bool
+	quiet         bool
 }
 
 func main() {
@@ -42,6 +45,8 @@ func parseFlags() (config, error) {
 	flag.IntVar(&cfg.breakLoops, "l", 3, "Loops of work before long break, shorthand")
 	flag.BoolVar(&cfg.confirmBreak, "confirm", false, "Confirm before starting next phase")
 	flag.BoolVar(&cfg.confirmBreak, "c", false, "Confirm before starting next phase, shorthand")
+	flag.BoolVar(&cfg.quiet, "quiet", false, "Disables phase complete notifications")
+	flag.BoolVar(&cfg.quiet, "q", false, "Disables phase complete notifications, shorthand")
 
 	// Custom usage message
 	flag.Usage = func() {
@@ -50,7 +55,7 @@ func parseFlags() (config, error) {
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExample Usage:\n")
-		fmt.Fprintf(os.Stderr, "%s -word 25 -break 5 -loops 6 -confirm\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s -work 25 -break 5 -loops 6 -confirm\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "%s -w 45 -b 7.5 -lb 22 -l 5 -c\n", os.Args[0])
 	}
 
@@ -105,8 +110,20 @@ func runPomodoro(cfg config) {
 		fmt.Printf("\nStarting %s phase.\n", phase)
 		countdown(duration, pauseChan)
 		fmt.Printf("%s complete.\a\n", phase)
+		if !cfg.quiet {
+			sendNotification(phase)
+		}
 
 		isBreak = !isBreak
+	}
+}
+
+func sendNotification(phase string) {
+	title := "GoPomo"
+	message := fmt.Sprintf("%s phase complete!", phase)
+	err := beeep.Notify(title, message, "")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error sending notification %v\n", err)
 	}
 }
 

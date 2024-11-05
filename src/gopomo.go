@@ -77,6 +77,9 @@ func runPomodoro(cfg config) {
 	isBreak := false
 	longBreakCounter := 0
 
+	pauseChan := make(chan bool)
+	go listenForPause(pauseChan)
+
 	for {
 		var duration time.Duration
 		var phase string
@@ -95,11 +98,11 @@ func runPomodoro(cfg config) {
 
 		if cfg.confirmBreak {
 			fmt.Println("Confirming next stage, press Enter to continue...")
-			fmt.Scanln()
+			<-pauseChan
 		}
 
 		fmt.Printf("Starting %s phase.\n", phase)
-		countdown(duration)
+		countdown(duration, pauseChan)
 		fmt.Printf("%s complete.\a\n", phase)
 
 		if isBreak {
@@ -109,14 +112,11 @@ func runPomodoro(cfg config) {
 	}
 }
 
-func countdown(duration time.Duration) {
+func countdown(duration time.Duration, pauseChan <-chan bool) {
 	remaining := duration
 	paused := false
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-
-	pauseChan := make(chan bool)
-	go listenForPause(pauseChan)
 
 	fmt.Printf("Press Return to pause the timer.\n")
 

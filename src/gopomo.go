@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -99,7 +100,7 @@ func runPomodoro(cfg config) {
 
 		fmt.Printf("Starting %s phase.\n", phase)
 		countdown(duration)
-		fmt.Printf("%s complete.\n", phase)
+		fmt.Printf("%s complete.\a\n", phase)
 
 		if isBreak {
 			longBreakCounter++
@@ -109,12 +110,47 @@ func runPomodoro(cfg config) {
 }
 
 func countdown(duration time.Duration) {
-	start := time.Now()
+	remaining := duration
+	paused := false
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	for remaining := duration; remaining > 0; remaining = duration - time.Since(start) {
-		fmt.Printf("Time remaining: %v\n", remaining.Round(time.Second))
-		<-ticker.C
+	pauseChan := make(chan bool)
+	go listenForPause(pauseChan)
+
+	fmt.Printf("Press Return to pause the timer.\n")
+
+	lastTick := time.Now()
+	for remaining > 0 {
+		select {
+		case <-ticker.C:
+			if !paused {
+				now := time.Now()
+				elapsed := now.Sub(lastTick)
+				remaining -= elapsed
+				lastTick = now
+				fmt.Printf("\rTime remaining: %v  ", remaining.Round(time.Second))
+			}
+		case pause := <-pauseChan:
+			if pause {
+				if !paused {
+					paused = true
+					fmt.Println("Timer paused. Press Return to resume.")
+				} else {
+					paused = false
+					lastTick = time.Now()
+					fmt.Println("Timer resumed.")
+				}
+			}
+		}
+	}
+	fmt.Println()
+}
+
+func listenForPause(pauseChan chan<- bool) {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		_, _ = reader.ReadString('\n')
+		pauseChan <- true
 	}
 }

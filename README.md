@@ -22,6 +22,9 @@ Explicitly sets the long break time in minutes (default 2 * break time)
 `-c or -confirm`
 Sets the confirm before starting next phase option (default false)
 
+`-q or -quiet`
+Disables notifications on phase completion (default false)
+
 `-l or -loops <int>`
 Sets the number of of work sessions before long break should start (default 3)
 

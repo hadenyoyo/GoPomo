@@ -23,7 +23,7 @@ Explicitly sets the long break time in minutes (default 2 * break time)
 Sets the confirm before starting next phase option (default false)
 
 `-l or -loops <int>`
-Sets the number of loops of work/break before long break should start (default 3)
+Sets the number of of work sessions before long break should start (default 3)
 
 ### Usage Examples
 `./run -work 25 -break 5 -confirm`
